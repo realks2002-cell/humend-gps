@@ -1,0 +1,157 @@
+{
+  "version": "2.0",
+  "lastUpdated": "2026-03-20T09:04:24.294Z",
+  "activeFeatures": [
+    "humend-gps",
+    "dashboard"
+  ],
+  "primaryFeature": "humend-gps",
+  "features": {
+    "humend-gps": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-20T08:54:33.840Z",
+        "lastUpdated": "2026-03-20T09:03:38.042Z"
+      },
+      "lastFile": "/Users/kenny/Desktop/Task/humend-gps/src/app/test-client.tsx"
+    },
+    "dashboard": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-20T09:03:34.188Z",
+        "lastUpdated": "2026-03-20T09:04:24.294Z"
+      },
+      "lastFile": "/Users/kenny/Desktop/Task/humend-gps/src/app/dashboard/tracking-map.tsx"
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Dynamic",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-03-20T08:50:52.105Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-03-20T09:04:24.294Z"
+  },
+  "history": [
+    {
+      "timestamp": "2026-03-20T08:54:33.840Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:54:39.922Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:54:46.409Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:54:58.405Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:55:59.472Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:56:04.288Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:56:10.625Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:56:26.770Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:56:48.097Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:57:17.388Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T08:57:23.429Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T09:03:34.188Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T09:03:36.809Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T09:03:38.043Z",
+      "feature": "humend-gps",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T09:03:45.695Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T09:04:04.176Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T09:04:09.762Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-20T09:04:24.294Z",
+      "feature": "dashboard",
+      "phase": "do",
+      "action": "updated"
+    }
+  ]
+}

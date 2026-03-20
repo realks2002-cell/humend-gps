@@ -23,10 +23,11 @@ import {
   diagnosePushStatus,
   sendTestPushToMember,
   bulkRemoveTestMembers,
+  updateTestShiftGroup,
 } from "./actions";
 import type { TestMember, PushDiagnosis } from "./actions";
 import type { DailyShiftWithDetails, ArrivalStatus } from "@/types/location";
-import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, UserPlus, Check, AlertTriangle, Play, Square, Users, RotateCcw, Bell, BellRing } from "lucide-react";
+import { MapPin, Trash2, Plus, User, Phone, Search, Navigation, UserPlus, Check, AlertTriangle, Play, Square, Users, RotateCcw, Bell, BellRing, Pencil, X, Save } from "lucide-react";
 import { TrackingMap } from "@/app/dashboard/tracking-map";
 
 const statusBadgeVariant: Record<ArrivalStatus, string> = {
@@ -148,8 +149,6 @@ export function TestClient({
 
   const [slots, setSlots] = useState<SlotInput[]>([
     defaultSlot(),
-    defaultSlot(),
-    defaultSlot(),
   ]);
   const [loading, setLoading] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -158,6 +157,15 @@ export function TestClient({
   const [cleaningUp, setCleaningUp] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [bulkAssigning, setBulkAssigning] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [editQuery, setEditQuery] = useState("");
+  const [editPlaceName, setEditPlaceName] = useState("");
+  const [editLat, setEditLat] = useState(0);
+  const [editLng, setEditLng] = useState(0);
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editResults, setEditResults] = useState<AddressResult[]>([]);
+  const [editSearching, setEditSearching] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
   const [pushDiagnosis, setPushDiagnosis] = useState<PushDiagnosis | null>(null);
   const [diagnosingPush, setDiagnosingPush] = useState<string | null>(null);
   const [sendingTestPush, setSendingTestPush] = useState<string | null>(null);
@@ -571,6 +579,66 @@ export function TestClient({
   };
 
 
+  const startEditGroup = (shift: DailyShiftWithDetails) => {
+    const key = `${shift.client_id}_${shift.start_time}`;
+    setEditingGroup(key);
+    setEditQuery(shift.clients.company_name);
+    setEditPlaceName(shift.clients.company_name);
+    setEditLat(shift.clients.latitude ?? 0);
+    setEditLng(shift.clients.longitude ?? 0);
+    setEditStartTime(shift.start_time.slice(0, 5));
+    setEditResults([]);
+  };
+
+  const cancelEditGroup = () => {
+    setEditingGroup(null);
+    setEditResults([]);
+  };
+
+  const handleEditSearch = async () => {
+    const query = editQuery.trim();
+    if (!query) return;
+    if (!window.google?.maps) return;
+    if (!geocoderRef.current) geocoderRef.current = new google.maps.Geocoder();
+
+    setEditSearching(true);
+    try {
+      const response = await geocoderRef.current.geocode({ address: query });
+      const results: AddressResult[] = response.results.map((r) => ({
+        address: r.formatted_address,
+        lat: r.geometry.location.lat(),
+        lng: r.geometry.location.lng(),
+      }));
+      if (results.length === 1) {
+        setEditPlaceName(results[0].address);
+        setEditLat(results[0].lat);
+        setEditLng(results[0].lng);
+        setEditQuery(results[0].address);
+        setEditResults([]);
+      } else {
+        setEditResults(results);
+      }
+    } catch (e) {
+      alert(`주소 검색 실패: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setEditSearching(false);
+    }
+  };
+
+  const handleEditSave = async (clientId: string, oldStartTime: string) => {
+    if (!editPlaceName || (editLat === 0 && editLng === 0)) return;
+    setEditSaving(true);
+    try {
+      await updateTestShiftGroup(clientId, oldStartTime, editPlaceName, editLat, editLng, editStartTime);
+      await refreshShifts();
+      setEditingGroup(null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "수정 실패");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const formatPhone = (phone: string) => {
     if (phone.length === 11) {
       return `${phone.slice(0, 3)}-${phone.slice(3, 7)}-${phone.slice(7)}`;
@@ -802,7 +870,7 @@ export function TestClient({
             >
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">
-                  근무지 {i + 1} - 주소 검색
+                  주소 검색
                 </label>
                 <div className="relative">
                   <div className="flex gap-2">
@@ -1003,8 +1071,83 @@ export function TestClient({
                 }
                 return [...groups.values()].map((groupShifts) => {
                   const first = groupShifts[0];
+                  const groupKey = `${first.client_id}_${first.start_time}`;
+                  const isEditing = editingGroup === groupKey;
                   return (
-                    <div key={`${first.client_id}_${first.start_time}`} className="rounded-lg border p-3 space-y-2">
+                    <div key={groupKey} className="rounded-lg border p-3 space-y-2">
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="주소 검색..."
+                                value={editQuery}
+                                onChange={(e) => {
+                                  setEditQuery(e.target.value);
+                                  setEditPlaceName("");
+                                  setEditLat(0);
+                                  setEditLng(0);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); handleEditSearch(); }
+                                }}
+                                className="flex-1 h-8 text-sm"
+                              />
+                              <Button variant="outline" size="sm" className="h-8" onClick={handleEditSearch} disabled={!editQuery.trim() || editSearching}>
+                                <Search className="mr-1 h-3 w-3" />
+                                {editSearching ? "..." : "검색"}
+                              </Button>
+                            </div>
+                            {editResults.length > 0 && (
+                              <div className="absolute z-10 mt-1 w-full rounded-md border bg-white shadow-lg">
+                                {editResults.map((r, ri) => (
+                                  <button
+                                    key={ri}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                    onClick={() => {
+                                      setEditPlaceName(r.address);
+                                      setEditLat(r.lat);
+                                      setEditLng(r.lng);
+                                      setEditQuery(r.address);
+                                      setEditResults([]);
+                                    }}
+                                  >
+                                    <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                    <span className="truncate">{r.address}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {editPlaceName && (
+                            <p className="flex items-center gap-1 text-xs text-green-600">
+                              <MapPin className="h-3 w-3" />
+                              {editPlaceName} ({editLat.toFixed(4)}, {editLng.toFixed(4)})
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={editStartTime}
+                              onChange={(e) => setEditStartTime(e.target.value)}
+                              className="w-28 h-8 text-sm"
+                            />
+                            <Button
+                              size="sm"
+                              className="h-8"
+                              onClick={() => handleEditSave(first.client_id, first.start_time)}
+                              disabled={editSaving || (!editPlaceName && editLat === 0)}
+                            >
+                              <Save className="mr-1 h-3 w-3" />
+                              {editSaving ? "저장중..." : "저장"}
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8" onClick={cancelEditGroup} disabled={editSaving}>
+                              <X className="mr-1 h-3 w-3" />
+                              취소
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <span className="font-medium text-sm">
@@ -1021,6 +1164,15 @@ export function TestClient({
                           </p>
                         </div>
                         <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => startEditGroup(first)}
+                          >
+                            <Pencil className="mr-1 h-3 w-3" />
+                            수정
+                          </Button>
                           {selectedMemberIds.size > 0 && (
                             <Button
                               variant="outline"
@@ -1035,6 +1187,7 @@ export function TestClient({
                           )}
                         </div>
                       </div>
+                      )}
                       <div className="space-y-1">
                         {groupShifts.map((shift) => {
                           const displayStatus = getDisplayStatus(shift, mounted);

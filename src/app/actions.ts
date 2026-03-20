@@ -320,6 +320,77 @@ export async function updateClientLocation(clientId: string, lat: number, lng: n
   if (error) throw new Error(`고객사 위치 업데이트 실패: ${error.message}`);
 }
 
+export async function updateTestShiftGroup(
+  clientId: string,
+  oldStartTime: string,
+  newPlaceName: string,
+  newLat: number,
+  newLng: number,
+  newStartTime: string,
+) {
+  const supabase = createAdminClient();
+
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  const { data: existingClient } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("company_name", newPlaceName)
+    .single();
+
+  let newClientId: string;
+  if (existingClient) {
+    await supabase
+      .from("clients")
+      .update({ latitude: newLat, longitude: newLng, location: newPlaceName, is_test: true })
+      .eq("id", existingClient.id);
+    newClientId = existingClient.id;
+  } else {
+    const { data: newClient, error: clientError } = await supabase
+      .from("clients")
+      .insert({
+        company_name: newPlaceName,
+        location: newPlaceName,
+        latitude: newLat,
+        longitude: newLng,
+        is_test: true,
+      })
+      .select("id")
+      .single();
+    if (clientError) throw new Error(`고객사 생성 실패: ${clientError.message}`);
+    newClientId = newClient.id;
+  }
+
+  const [h, m] = newStartTime.split(":").map(Number);
+  const endTime = `${String(Math.min(h + 9, 23)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+
+  const { data: shiftsToUpdate } = await supabase
+    .from("daily_shifts")
+    .select("id")
+    .eq("client_id", clientId)
+    .eq("start_time", oldStartTime)
+    .eq("work_date", today);
+
+  if (!shiftsToUpdate || shiftsToUpdate.length === 0) {
+    throw new Error("업데이트할 배정을 찾을 수 없습니다.");
+  }
+
+  const ids = shiftsToUpdate.map((s) => s.id);
+  const { error } = await supabase
+    .from("daily_shifts")
+    .update({
+      client_id: newClientId,
+      start_time: newStartTime,
+      end_time: endTime,
+    })
+    .in("id", ids);
+
+  if (error) throw new Error(`배정 업데이트 실패: ${error.message}`);
+  return { updated: ids.length };
+}
+
 export async function deleteTestShift(shiftId: string) {
   const supabase = createAdminClient();
 

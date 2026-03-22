@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
       last_known_lat: lat,
       last_known_lng: lng,
       last_seen_at: now.toISOString(),
+      last_heartbeat_at: now.toISOString(),
     };
 
     if (isOffsite) {
@@ -146,6 +147,7 @@ export async function POST(req: NextRequest) {
     last_known_lat: lat,
     last_known_lng: lng,
     last_seen_at: now.toISOString(),
+    last_heartbeat_at: now.toISOString(),
     last_speed: speed ?? null,
   };
 

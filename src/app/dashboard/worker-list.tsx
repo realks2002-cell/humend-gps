@@ -11,14 +11,20 @@ function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): Arriv
   const status = shift.arrival_status;
   if (["arrived", "late", "noshow"].includes(status)) return status;
   const now = Date.now();
+  const HEARTBEAT_TIMEOUT = 3 * 60 * 1000;
+  const LOCATION_TIMEOUT = 5 * 60 * 1000;
   const startTimeNorm = shift.start_time.length === 5 ? shift.start_time + ":00" : shift.start_time;
   const shiftStart = new Date(`${shift.work_date}T${startTimeNorm}+09:00`).getTime();
   if (now > shiftStart) return "late";
   if (
+    shift.last_heartbeat_at &&
+    now - new Date(shift.last_heartbeat_at).getTime() > HEARTBEAT_TIMEOUT
+  ) return "offline";
+  if (
     shift.last_seen_at &&
     ["tracking", "moving"].includes(status) &&
-    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
-  ) return "offline";
+    now - new Date(shift.last_seen_at).getTime() > LOCATION_TIMEOUT
+  ) return "no_signal";
   return status;
 }
 
@@ -29,7 +35,8 @@ export const statusConfig: Record<
   pending: { label: "대기", color: "text-gray-600", bgColor: "bg-gray-100" },
   tracking: { label: "추적중", color: "text-blue-600", bgColor: "bg-blue-50" },
   moving: { label: "이동중", color: "text-blue-700", bgColor: "bg-blue-100" },
-  offline: { label: "오프라인", color: "text-gray-500", bgColor: "bg-gray-50" },
+  offline: { label: "오프라인", color: "text-red-600", bgColor: "bg-red-50" },
+  no_signal: { label: "미수신", color: "text-gray-500", bgColor: "bg-gray-50" },
   late_risk: { label: "지각위험", color: "text-orange-600", bgColor: "bg-orange-50" },
   noshow_risk: { label: "노쇼위험", color: "text-red-600", bgColor: "bg-red-50" },
   arrived: { label: "도착", color: "text-green-700", bgColor: "bg-green-50" },
@@ -76,6 +83,7 @@ export function WorkerList({ shifts: initialShifts }: { shifts: DailyShiftWithDe
                     last_known_lat: payload.new.last_known_lat,
                     last_known_lng: payload.new.last_known_lng,
                     last_seen_at: payload.new.last_seen_at,
+                    last_heartbeat_at: payload.new.last_heartbeat_at,
                   }
                 : s
             )
@@ -111,7 +119,8 @@ export function WorkerList({ shifts: initialShifts }: { shifts: DailyShiftWithDe
     { status: "all", label: "전체", count: shifts.length, color: "text-gray-700" },
     { status: "arrived", label: "도착", count: counts["arrived"] || 0, color: "text-green-600" },
     { status: "moving", label: "이동중", count: (counts["moving"] || 0) + (counts["tracking"] || 0), color: "text-blue-600" },
-    { status: "offline", label: "오프라인", count: counts["offline"] || 0, color: "text-gray-500" },
+    { status: "offline", label: "오프라인", count: counts["offline"] || 0, color: "text-red-600" },
+    { status: "no_signal", label: "미수신", count: counts["no_signal"] || 0, color: "text-gray-500" },
     { status: "late_risk", label: "지각위험", count: counts["late_risk"] || 0, color: "text-orange-600" },
     { status: "noshow_risk", label: "노쇼위험", count: counts["noshow_risk"] || 0, color: "text-red-600" },
     { status: "noshow", label: "노쇼", count: counts["noshow"] || 0, color: "text-red-800" },

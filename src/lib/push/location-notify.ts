@@ -53,6 +53,19 @@ export async function notifyShiftAssigned(
   });
 }
 
+export async function notifyShiftReminder(
+  memberId: string,
+  companyName: string,
+  startTime: string
+) {
+  await notifyMemberLocation({
+    memberId,
+    title: "출근 준비를 해주세요",
+    body: `${companyName} ${startTime} 출근 예정 — 앱을 켜주세요`,
+    url: "/my/tracking",
+  });
+}
+
 export async function notifyArrivalConfirmed(
   memberId: string,
   companyName: string

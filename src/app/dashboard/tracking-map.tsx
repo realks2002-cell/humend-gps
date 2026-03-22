@@ -17,7 +17,8 @@ export const statusColorMap: Record<ArrivalStatus, MarkerColor> = {
   pending: "gray",
   tracking: "blue",
   moving: "blue",
-  offline: "gray",
+  offline: "red",
+  no_signal: "gray",
   late_risk: "orange",
   noshow_risk: "red",
   arrived: "green",
@@ -56,6 +57,7 @@ export const statusLabels: Record<ArrivalStatus, string> = {
   tracking: "추적중",
   moving: "이동중",
   offline: "오프라인",
+  no_signal: "미수신",
   late_risk: "지각위험",
   noshow_risk: "노쇼위험",
   arrived: "도착",
@@ -68,11 +70,17 @@ function getDisplayStatus(shift: DailyShiftWithDetails, mounted: boolean): Arriv
   const status = shift.arrival_status;
   if (["arrived", "late", "noshow"].includes(status)) return status;
   const now = Date.now();
+  const HEARTBEAT_TIMEOUT = 3 * 60 * 1000;
+  const LOCATION_TIMEOUT = 5 * 60 * 1000;
+  if (
+    shift.last_heartbeat_at &&
+    now - new Date(shift.last_heartbeat_at).getTime() > HEARTBEAT_TIMEOUT
+  ) return "offline";
   if (
     shift.last_seen_at &&
     ["tracking", "moving"].includes(status) &&
-    now - new Date(shift.last_seen_at).getTime() > 5 * 60 * 1000
-  ) return "offline";
+    now - new Date(shift.last_seen_at).getTime() > LOCATION_TIMEOUT
+  ) return "no_signal";
   return status;
 }
 
@@ -266,6 +274,7 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
                     last_known_lat: payload.new.last_known_lat,
                     last_known_lng: payload.new.last_known_lng,
                     last_seen_at: payload.new.last_seen_at,
+                    last_heartbeat_at: payload.new.last_heartbeat_at,
                   }
                 : s
             )
@@ -312,7 +321,8 @@ export function TrackingMap({ shifts: externalShifts }: { shifts: DailyShiftWith
     >
       <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2.5 text-xs space-y-1.5 z-10 border">
         {[
-          { color: "#9ca3af", label: "대기" },
+          { color: "#ef4444", label: "오프라인" },
+          { color: "#9ca3af", label: "미수신" },
           { color: "#3b82f6", label: "추적중·이동중" },
           { color: "#f97316", label: "지각위험·지각" },
           { color: "#22c55e", label: "도착" },
